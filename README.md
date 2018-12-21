@@ -1,8 +1,10 @@
 # openssl-android-build #
 
-Working build scripts for OpenSSL `libcrypto` and `libssl` static and dynamic libraries primarily for using on Android and other OSs. This repo took best workable ideas from [ekke/android-openssl-qt](https://github.com/ekke/android-openssl-qt) and [couchbaselabs/couchbase-lite-libcrypto](https://github.com/couchbaselabs/couchbase-lite-libcrypto) repos - many thanks to their authors! More ideas about these scripts creation could be found there. Resulting scripts _successfully_ do all for you from downloading and extracting openssl and generating libs for `x86`, `armeabi-v7a`, `arm64-v8a` architectures.
+Working build scripts for OpenSSL `libcrypto` and `libssl` static and dynamic libraries primarily for using on Android, Mac, Linux OSs. Windows version removed from current repo, look to original one for the instructions.
 
-Default OpenSSL version is [1.0.2o](https://www.openssl.org/source/old/1.0.2/openssl-1.0.2o.tar.gz) as currently used in Qt Creator. However You may build with any desired version (instructions below), except for the Windows Store builds which are not modified from original repo version and does not function for now.
+This repo took best workable ideas from [ekke/android-openssl-qt](https://github.com/ekke/android-openssl-qt) and [couchbaselabs/couchbase-lite-libcrypto](https://github.com/couchbaselabs/couchbase-lite-libcrypto) repos - many thanks to their authors! More ideas about these scripts creation could be found there. Resulting scripts _successfully_ do all for you from downloading and extracting openssl and generating libs for `x86`, `armeabi-v7a`, `arm64-v8a` architectures.
+
+Default OpenSSL version is [1.0.2o](https://www.openssl.org/source/old/1.0.2/openssl-1.0.2o.tar.gz) as currently used in Qt Creator.
 
 # How to rebuild the binaries
 
@@ -89,36 +91,34 @@ Run the build script. The binaries will be output at `libs/linux`.
  ```
  $ ./build-linux.sh
  ```
-### 3.4 Windows
-> #### The script was not fixed from original repo, so instructions for Windows does not work for now
-
-#### Requirements
-1. [Visual Studio 2015](https://www.visualstudio.com/en-us/downloads/download-visual-studio-vs.aspx)
-2. [Windows SDK](https://msdn.microsoft.com/en-us/windows/desktop/bg162891.aspx).
-3. [Active Perl](http://www.activestate.com/activeperl) or [Strawberry Perl](http://strawberryperl.com)
-
-Note that the build-windows.cmd script is configured with Visual Studio 2013.
-
-#### Build Steps
-1. Make sure that the path to the `nmake` tool is included into the PATH Environment.
- ```
- Visual 2015: C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin
- ```
-
-2. Run the build script. The binaries will be output at `libs/windows`.
-
- ```
- C:\couchbase-lite-libcrypto>build-windows.cmd
- ```
-### 3.5 Windows Store
-
-Follow the instructions at [Microsoft's fork](https://github.com/Microsoft/openssl/tree/OpenSSL_1_0_2k_WinRT)
-
-## Qt project file modifications
+## 4. Qt project file modifications
 
 Modify `.pro` file in a Qt project: insert this line into your `.pro`:
 ```
 include(android-build.pri)
+```
+Assume build libraries and headers copied to `./3rdparty` dir or your source tree. Following structure considers we build `clang` library version:
+```
+$$PWD/3rdparty
+    └── include
+        └── openssl
+            └── *.h
+    └── libs/llvm
+            ├── arm64-v8a
+            │   ├── libcrypto.a
+            │   ├── libcrypto.so
+            │   ├── libssl.a
+            │   └── libssl.so
+            ├── arch-armeabi-v7a
+            │   ├── libcrypto.a
+            │   ├── libcrypto.so
+            │   ├── libssl.a
+            │   └── libssl.so
+            └── arch-x86
+                ├── libcrypto.a
+                ├── libcrypto.so
+                ├── libssl.a
+                └── libssl.so
 ```
 
 ### .pri file content
