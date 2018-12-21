@@ -2,6 +2,10 @@
 
 #set -v
 
+# export OPENSSL_VERSION="openssl-1.0.2o"
+curl -O "https://www.openssl.org/source/${OPENSSL_VERSION}.tar.gz"
+tar xfz "${OPENSSL_VERSION}.tar.gz"
+
 PROJECT_HOME=`pwd`
 PATH_ORG=$PATH
 OUTPUT_DIR="libs/android/clang"
@@ -24,11 +28,6 @@ build_android_clang() {
 	TOOLCHAIN_DIR="./toolchain/"$ARCH
 	stl="libc++"
 
-	# Clean openssl:
-	cd vendor/openssl
-	git clean -dfx  --quiet && git checkout -f
-	cd ../../
-
 	# Build toolchain
 	$ANDROID_NDK_HOME/build/tools/make-standalone-toolchain.sh --verbose --stl=$stl --arch=$ARCH --install-dir=$TOOLCHAIN_DIR --platform=$PLATFORM --force
 
@@ -48,14 +47,32 @@ build_android_clang() {
 	export CPPFLAGS="-DANDROID -fPIC"
 	export PATH=$PATH_ORG:$TOOLCHAIN_ROOT/bin:$SYSROOT/usr/local/bin
 
-	# Build libcrypto
-	cd vendor/openssl
+	# Clean openssl:
+	cd "${OPENSSL_VERSION}"
+	make clean
+
+	# Build openssl libraries
 	perl -pi -w -e 's/\-mandroid//g;' ./Configure
-	./Configure $CONFIGURE_PLATFORM no-asm no-shared --static
-	make build_crypto -j 4
-	mkdir -p ../../$OUTPUT_DIR/${ARCHITECTURE}/
-	cp libcrypto.a ../../$OUTPUT_DIR/${ARCHITECTURE}/libcrypto.a
-	cd ../..
+	./Configure $CONFIGURE_PLATFORM shared threads no-asm no-sse2
+
+    # patch SONAME
+    perl -pi -e 's/SHLIB_EXT=\.so\.\$\(SHLIB_MAJOR\)\.\$\(SHLIB_MINOR\)/SHLIB_EXT=\.so/g' Makefile
+    perl -pi -e 's/SHARED_LIBS_LINK_EXTS=\.so\.\$\(SHLIB_MAJOR\) \.so//g' Makefile
+    # quote injection for proper SONAME
+    perl -pi -e 's/SHLIB_MAJOR=1/SHLIB_MAJOR=`/g' Makefile
+    perl -pi -e 's/SHLIB_MINOR=0.0/SHLIB_MINOR=`/g' Makefile
+
+    make build_libs -j8
+	mkdir -p ../$OUTPUT_DIR/${ARCHITECTURE}/
+
+    file libcrypto.so
+    file libssl.so
+
+    cp libcrypto.a ../$OUTPUT_DIR/${ARCHITECTURE}/libcrypto.a
+	cp libssl.a ../$OUTPUT_DIR/${ARCHITECTURE}/libssl.a
+	cp libcrypto.so ../$OUTPUT_DIR/${ARCHITECTURE}/libcrypto.so
+	cp libssl.so ../$OUTPUT_DIR/${ARCHITECTURE}/libssl.so
+	cd ..
 }
 
 # Build libcrypto for armeabi-v7a, x86 and arm64-v8a.

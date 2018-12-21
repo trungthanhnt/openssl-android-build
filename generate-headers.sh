@@ -2,22 +2,26 @@
 
 set -e
 
+# export OPENSSL_VERSION="openssl-1.0.2o"
+curl -O "https://www.openssl.org/source/${OPENSSL_VERSION}.tar.gz"
+tar xfz "${OPENSSL_VERSION}.tar.gz"
+
 rm -rf libs/include
 
-cd vendor/openssl
+cd "${OPENSSL_VERSION}"
 
 # Clean:
-git clean -dfx && git checkout -f
+make clean
 
 # Generate headers:
 ./Configure dist
 
-# Copy headers:
-cp -r include ../../libs
+# Copy headers resolving symbolic links to files' content:
+cp -Lr include ../libs
 
 # Clean:
-git clean -dfx && git checkout -f
+make clean
 
-cd ../../
+cd ../
 
 exit 0

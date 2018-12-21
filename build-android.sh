@@ -4,16 +4,15 @@
 #
 set -e
 
+# export OPENSSL_VERSION="openssl-1.0.2o"
+curl -O "https://www.openssl.org/source/${OPENSSL_VERSION}.tar.gz"
+tar xfz "${OPENSSL_VERSION}.tar.gz"
+
 output_dir="libs/android"
 
 # Clean output:
 rm -rf $output_dir
 mkdir $output_dir
-
-# Clean openssl:
-cd vendor/openssl
-git clean -dfx && git checkout -f
-cd ../../
 
 archs=(armeabi armeabi-v7a arm64-v8a mips mips64 x86 x86_64)
 
@@ -76,7 +75,10 @@ for arch in ${archs[@]}; do
     . ./build-android-setenv.sh
 
     echo "CROSS COMPILE ENV : $CROSS_COMPILE"
-    cd vendor/openssl
+
+    # Clean openssl:
+	cd "${OPENSSL_VERSION}"
+	make clean
 
     xCFLAGS="-fPIC -I$ANDROID_DEV/include -B$ANDROID_DEV/$xLIB"
 
@@ -84,32 +86,37 @@ for arch in ${archs[@]}; do
     #perl -pi -e 's/install: all install_docs install_sw/install: install_docs install_sw/g' Makefile.org
 
     ./Configure dist
-    ./Configure $openssl_config_options --openssldir=/tmp/openssl_android/ $configure_platform $xCFLAGS
-    
-    # We do not need to patch as we are building only static libraries (Pasin):
+    ./Configure shared threads no-asm no-sse2 --openssldir=/tmp/openssl_android/ $configure_platform $xCFLAGS
+
+    # We need to patch this as we are building both static and dynamic libraries:
     # patch .SO NAME
-    #perl -pi -e 's/SHLIB_EXT=\.so\.\$\(SHLIB_MAJOR\)\.\$\(SHLIB_MINOR\)/SHLIB_EXT=\.so/g' Makefile
-    #perl -pi -e 's/SHARED_LIBS_LINK_EXTS=\.so\.\$\(SHLIB_MAJOR\) \.so//g' Makefile
+    perl -pi -e 's/SHLIB_EXT=\.so\.\$\(SHLIB_MAJOR\)\.\$\(SHLIB_MINOR\)/SHLIB_EXT=\.so/g' Makefile
+    perl -pi -e 's/SHARED_LIBS_LINK_EXTS=\.so\.\$\(SHLIB_MAJOR\) \.so//g' Makefile
     # quote injection for proper .SO NAME
-    #perl -pi -e 's/SHLIB_MAJOR=1/SHLIB_MAJOR=`/g' Makefile
-    #perl -pi -e 's/SHLIB_MINOR=0.0/SHLIB_MINOR=`/g' Makefile
+    perl -pi -e 's/SHLIB_MAJOR=1/SHLIB_MAJOR=`/g' Makefile
+    perl -pi -e 's/SHLIB_MINOR=0.0/SHLIB_MINOR=`/g' Makefile
 
     # After disabling some feature, those features are still referenced in test.
     # As a result, make depend (which also make depend on test files) has errors.
-    # Couldn't find a right way to disable building test so deleting the test folder 
+    # Couldn't find a right way to disable building test so deleting the test folder
     # as a workaround for now (Pasin):
     rm -rf test
 
     make clean
-    make depend
-    make build_crypto
+    make depend -j8
+    make build_libs -j8
 
-    file libcrypto.a
-    cp libcrypto.a ../../$output_dir/${arch}/libcrypto.a
+    file libcrypto.so
+    file libssl.so
+
+    cp libcrypto.a ../$output_dir/${arch}/libcrypto.a
+	cp libssl.a ../$output_dir/${arch}/libssl.a
+	cp libcrypto.so ../$output_dir/${arch}/libcrypto.so
+	cp libssl.so ../$output_dir/${arch}/libssl.so
 
     # Cleanup:
-    git clean -dfx && git checkout -f
+	make clean
 
-    cd ../..
+    cd ..
 done
 exit 0
