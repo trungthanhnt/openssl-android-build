@@ -1,6 +1,6 @@
 # openssl-android-build #
 
-Working build scripts for OpenSSL `libcrypto` and `libssl` static and dynamic libraries primarily for using on Android, Mac, Linux OSs. Windows version removed from current repo, look to original one for the instructions.
+Working build scripts for OpenSSL `libcrypto` and `libssl` static and dynamic libraries primarily for using on Android. Mac, and Linux build script are kept and updated as well. Windows version removed from current repo, look to original one for the instructions.
 
 This repo took best workable ideas from [ekke/android-openssl-qt](https://github.com/ekke/android-openssl-qt) and [couchbaselabs/couchbase-lite-libcrypto](https://github.com/couchbaselabs/couchbase-lite-libcrypto) repos - many thanks to their authors! More ideas about these scripts creation could be found there. Resulting scripts _successfully_ do all for you from downloading and extracting openssl and generating libs for `x86`, `armeabi-v7a`, `arm64-v8a` architectures.
 
@@ -13,12 +13,17 @@ Default OpenSSL version is [1.0.2o](https://www.openssl.org/source/old/1.0.2/ope
 $ git clone https://github.com/akontsevich/openssl-android-build.git
 $ export OPENSSL_VERSION="openssl-1.0.2o"
 ```
-## 2. Generate include headers
 
-Run the following command on a Mac or Linux machine. The headers will be output at `libs/include`.
+## 2. Generate include headers
+Run the following command on a Mac
+```
+$ ./generate-headers-mac.sh
+```
+or Linux machine:
 ```
 $ ./generate-headers.sh
 ```
+The headers will be output at `libs/include`.
 
 ## 3. Build the binaries for each platform
 
@@ -43,7 +48,6 @@ or
 
 #### Build Steps with GCC
 1. Run the build script. The binaries will be output at `libs/android`
-
  ```
  $ ./build-android.sh
  ```
@@ -61,9 +65,12 @@ or
 #### Requirements
 1. XCode
 2. makedepend (if you don't have one)
-
  ```
  $ homebrew install makedepend
+ ```
+or
+ ```
+ $ brew install makedepend
  ```
 
 #### Build Steps
@@ -91,6 +98,7 @@ Run the build script. The binaries will be output at `libs/linux`.
  ```
  $ ./build-linux.sh
  ```
+
 ## 4. Qt project file modifications
 
 Modify `.pro` file in a Qt project: insert this line into your `.pro`:

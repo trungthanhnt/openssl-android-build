@@ -1,10 +1,14 @@
 #
-# References: 
+# References:
 # https://gist.github.com/Norod/2f3ef9b6e3758dfc1433
 # https://github.com/st3fan/ios-openssl
 # https://github.com/x2on/OpenSSL-for-iPhone/blob/master/build-libssl.sh
 
 set -e
+
+# export OPENSSL_VERSION="openssl-1.0.2o"
+curl -O "https://www.openssl.org/source/${OPENSSL_VERSION}.tar.gz"
+tar xfz "${OPENSSL_VERSION}.tar.gz"
 
 # SDK version:
 SDK_VERSION=$(xcodebuild -version -sdk iphoneos | grep SDKVersion | cut -f2 -d ':' | tr -d '[[:space:]]')
@@ -12,20 +16,19 @@ SDK_VERSION=$(xcodebuild -version -sdk iphoneos | grep SDKVersion | cut -f2 -d '
 # Min iOS deployment target version:
 MIN_IOS_VERSION="7.0"
 
-OPENSSL_CONFIG_OPTIONS=$(cat config-params.txt)
+OPENSSL_CONFIG_OPTIONS=$(cat config-params-mac.txt)
 
 build_osx() {
   ARCH=$1
-  echo "Building osx libcrypto.a for ${ARCH}"
+  echo "Building osx libcrypto and libssl for ${ARCH}"
 
-  cd vendor/openssl
-  git clean -dfx && git checkout -f
+  cd "${OPENSSL_VERSION}"
 
   # define temp output directory:
   TMP_OUTPUT_DIR="/tmp/openssl-osx-${ARCH}"
   rm -rf ${TMP_OUTPUT_DIR}
   mkdir ${TMP_OUTPUT_DIR}
-  
+
   export CC="/usr/bin/clang"
 
   TARGET="darwin-i386-cc"
@@ -35,24 +38,31 @@ build_osx() {
 
   # Config:
   ./Configure dist
-  ./Configure ${TARGET} ${OPENSSL_CONFIG_OPTIONS} --openssldir="${TMP_OUTPUT_DIR} -fPIC"
-  
+  ./Configure ${TARGET} ${OPENSSL_CONFIG_OPTIONS}
+
   # Remove test:
   rm -rf test
-  
+
   # Make depend:
-  make depend
+  make depend -j8
 
   # Make libcrypto:
-  make build_crypto
+  make build_libs -j8
 
   # Copy libcrypto.a to temp output directory:
   file libcrypto.a
+  file libcrypto.dylib
+  file libssl.a
+  file libssl.dylib
+
   cp libcrypto.a ${TMP_OUTPUT_DIR}
+  cp libcrypto.dylib ${TMP_OUTPUT_DIR}
+  cp libssl.a ${TMP_OUTPUT_DIR}
+  cp libssl.dylib ${TMP_OUTPUT_DIR}
 
   # Cleanup:
-  git clean -dfx && git checkout -f
-  cd ../../
+  make clean
+  cd ..
 }
 
 build_ios() {
@@ -77,7 +87,7 @@ build_ios() {
     PLATFORM="iPhoneOS"
     sed -ie "s!static volatile sig_atomic_t intr_signal;!static volatile intr_signal;!" "crypto/ui/ui_openssl.c"
   fi
-  
+
   export $PLATFORM
   export CROSS_TOP="${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer"
   export CROSS_SDK="${PLATFORM}${SDK_VERSION}.sdk"
@@ -121,10 +131,15 @@ build_osx "x86_64"
 
 # Create fat binaries:
 BASE_TMP_OUTPUT_DIR="/tmp/openssl-osx"
-lipo \
-    "${BASE_TMP_OUTPUT_DIR}-i386/libcrypto.a" \
-    "${BASE_TMP_OUTPUT_DIR}-x86_64/libcrypto.a" \
+lipo "${BASE_TMP_OUTPUT_DIR}-i386/libcrypto.a" "${BASE_TMP_OUTPUT_DIR}-x86_64/libcrypto.a" \
     -create -output ${OUTPUT_DIR}/libcrypto.a
+lipo "${BASE_TMP_OUTPUT_DIR}-i386/libssl.a" "${BASE_TMP_OUTPUT_DIR}-x86_64/libssl.a" \
+    -create -output ${OUTPUT_DIR}/libssl.a
+
+lipo "${BASE_TMP_OUTPUT_DIR}-i386/libcrypto.dylib" "${BASE_TMP_OUTPUT_DIR}-x86_64/libcrypto.dylib" \
+    -create -output ${OUTPUT_DIR}/libcrypto.dylib
+lipo "${BASE_TMP_OUTPUT_DIR}-i386/libssl.dylib" "${BASE_TMP_OUTPUT_DIR}-x86_64/libssl.dylib" \
+    -create -output ${OUTPUT_DIR}/libssl.dylib
 
 # # Build iOS binaries:
 # OUTPUT_DIR="libs/ios"
