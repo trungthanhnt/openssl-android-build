@@ -60,7 +60,20 @@ or
  $ ./build-android-clang.sh
  ```
 
-### 3.2 OSX ~~and iOS~~
+### 3.2 WebAssembly
+#### Requirements
+1. Downdload and install Emscripten: http://kripken.github.io/emscripten-site/docs/getting_started/downloads.html
+2. Enter into `emsdk` dir and activate PATH and other environment variables in the current terminal
+```
+source ./emsdk_env.sh
+```
+#### Build Steps with Emscripten
+1. Run the build script. The binaries will be output at `libs/wasm`
+ ```
+ $ ./build-emscripten.sh
+ ```
+
+### 3.3 OSX ~~and iOS~~
 
 #### Requirements
 1. XCode
@@ -79,7 +92,7 @@ Run the build script. The binaries will be output at `libs/osx` and `libs/ios`. 
  $ ./build-osx-ios.sh
  ```
 
-### 3.3 Linux
+### 3.4 Linux
 
 #### Requirements
 1. GCC

@@ -17,7 +17,7 @@ mkdir $OUTPUT_DIR
 build_android_clang() {
 
 	echo ""
-	echo "----- Build libcrypto for "$1" -----"
+	echo "----- Build libcrypto & libssl.so for "$1" -----"
 	echo ""
 
 	ARCHITECTURE=$1

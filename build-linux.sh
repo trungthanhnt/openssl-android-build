@@ -16,7 +16,7 @@ mkdir $OUTPUT_DIR
 
 build_linux() {
   ARCH=$1
-  echo "Building linux libcrypto.a for ${ARCH}"
+  echo "Building linux libcrypto.a & libssl.so for ${ARCH}"
 
 	cd "${OPENSSL_VERSION}"
 
