@@ -1,1 +1,1 @@
-shared no-asm no-zlib no-ssl2 no-ssl3 no-comp no-hw no-engine
+shared no-asm no-zlib no-ssl2 no-ssl3 no-comp no-hw
