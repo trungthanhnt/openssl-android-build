@@ -2,8 +2,8 @@
 
 #set -v
 
-# export OPENSSL_VERSION="openssl-1.0.2o"
-curl -O "https://www.openssl.org/source/${OPENSSL_VERSION}.tar.gz"
+# export OPENSSL_VERSION="openssl-3.3.0"
+wget  "https://www.openssl.org/source/${OPENSSL_VERSION}.tar.gz"
 tar xfz "${OPENSSL_VERSION}.tar.gz"
 
 PROJECT_HOME=`pwd`
@@ -29,7 +29,7 @@ build_android_clang() {
 	stl="libc++"
 
 	# Build toolchain
-	$ANDROID_NDK_HOME/build/tools/make-standalone-toolchain.sh --verbose --stl=$stl --arch=$ARCH --install-dir=$TOOLCHAIN_DIR --platform=$PLATFORM --force
+	#$ANDROID_NDK_HOME/build/tools/make-standalone-toolchain.sh --verbose --stl=$stl --arch=$ARCH --install-dir=$TOOLCHAIN_DIR --platform=$PLATFORM --force
 
 	# Set toolchain
 	export TOOLCHAIN_ROOT=$PROJECT_HOME/$TOOLCHAIN_DIR
@@ -45,7 +45,8 @@ build_android_clang() {
 	export CHOST=$TOOLCHAIN
 	export CXXFLAGS="-std=c++11 -fPIC"
 	export CPPFLAGS="-DANDROID -fPIC"
-	export PATH=$PATH_ORG:$TOOLCHAIN_ROOT/bin:$SYSROOT/usr/local/bin
+	#export PATH=$PATH_ORG:$TOOLCHAIN_ROOT/bin:$SYSROOT/usr/local/bin
+	export PATH=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin:$ANDROID_NDK_ROOT/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin:$PATH
 
 	# Clean openssl:
 	cd "${OPENSSL_VERSION}"
@@ -53,7 +54,8 @@ build_android_clang() {
 
 	# Build openssl libraries
 	perl -pi -w -e 's/\-mandroid//g;' ./Configure
-	./Configure $CONFIGURE_PLATFORM shared threads no-asm no-sse2
+	#./Configure $CONFIGURE_PLATFORM shared threads no-asm no-sse2
+ 	./Configure $CONFIGURE_PLATFORM -D__ANDROID_API__=29
 
     # patch SONAME
     perl -pi -e 's/SHLIB_EXT=\.so\.\$\(SHLIB_MAJOR\)\.\$\(SHLIB_MINOR\)/SHLIB_EXT=\.so/g' Makefile
